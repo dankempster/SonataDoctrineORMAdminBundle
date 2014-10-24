@@ -88,6 +88,7 @@ class ModelManager implements ModelManagerInterface
                 $embeddedClass = $metadata->embeddedClasses[$nameElement]['class'];
                 $parentAssociationMappings[] = [
                     'fieldName' => $nameElement,
+                    'embeddable' => true,
                 ];
             } else {
                 $parentAssociationMappings[] = $metadata->associationMappings[$nameElement];
