@@ -303,6 +303,10 @@ class ProxyQuery implements ProxyQueryInterface
                  }
              }
 
+            if (isset($associationMapping['embeddable']) && $associationMapping['embeddable']) {
+                return sprintf('%s.%s', $alias, $associationMapping['fieldName']);
+            }
+
             $newAlias .= '_'.$associationMapping['fieldName'];
             if (!in_array($newAlias, $this->entityJoinAliases)) {
                 $this->entityJoinAliases[] = $newAlias;

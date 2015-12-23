@@ -63,6 +63,11 @@ class ModelManager implements ModelManagerInterface, LockInterface
         return $this->getEntityManager($class)->getMetadataFactory()->getMetadataFor($class);
     }
 
+    public function getMetadataForEmbeddable($entity, $class)
+    {
+        return $this->getEntityManager($entity)->getMetadataFactory()->getMetadataFor($class);
+    }
+
     /**
      * Returns the model's metadata holding the fully qualified property, and the last
      * property name.
@@ -82,6 +87,7 @@ class ModelManager implements ModelManagerInterface, LockInterface
         $nameElements              = explode('.', $propertyFullName);
         $lastPropertyName          = array_pop($nameElements);
         $class                     = $baseClass;
+        $embeddedClass = null;
         $parentAssociationMappings = array();
 
         foreach ($nameElements as $nameElement) {
@@ -90,14 +96,21 @@ class ModelManager implements ModelManagerInterface, LockInterface
             if (isset($metadata->associationMappings[$nameElement])) {
                 $parentAssociationMappings[] = $metadata->associationMappings[$nameElement];
                 $class = $metadata->getAssociationTargetClass($nameElement);
+                $embeddedClass = null;
             } elseif (isset($metadata->embeddedClasses[$nameElement])) {
-                $parentAssociationMappings = array();
-                $lastPropertyName = $propertyFullName;
-                $class = $baseClass;
+                $parentAssociationMappings[] = array(
+                    'fieldName' => $nameElement,
+                    'embeddable' => true,
+                );
+                $embeddedClass = $metadata->embeddedClasses[$nameElement]['class'];
             }
         }
 
-        return array($this->getMetadata($class), $lastPropertyName, $parentAssociationMappings);
+        return array(
+            $embeddedClass ? $this->getMetadataForEmbeddable($class, $embeddedClass) : $this->getMetadata($class),
+            $lastPropertyName,
+            $parentAssociationMappings,
+        );
     }
 
     /**
