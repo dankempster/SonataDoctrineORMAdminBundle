@@ -54,6 +54,11 @@ class ModelManager implements ModelManagerInterface
         return $this->getEntityManager($class)->getMetadataFactory()->getMetadataFor($class);
     }
 
+    public function getMetadataForEmbeddable($entity, $class)
+    {
+        return $this->getEntityManager($entity)->getMetadataFactory()->getMetadataFor($class);
+    }
+
     /**
      * Returns the model's metadata holding the fully qualified property, and the last
      * property name
@@ -73,15 +78,30 @@ class ModelManager implements ModelManagerInterface
         $nameElements = explode('.', $propertyFullName);
         $lastPropertyName = array_pop($nameElements);
         $class = $baseClass;
+        $embeddedClass = null;
         $parentAssociationMappings = array();
 
         foreach ($nameElements as $nameElement) {
             $metadata = $this->getMetadata($class);
-            $parentAssociationMappings[] = $metadata->associationMappings[$nameElement];
-            $class = $metadata->getAssociationTargetClass($nameElement);
+
+            if (isset($metadata->embeddedClasses[$nameElement])) {
+                $embeddedClass = $metadata->embeddedClasses[$nameElement]['class'];
+                $parentAssociationMappings[] = [
+                    'fieldName' => $nameElement,
+                    'embeddable' => true,
+                ];
+            } else {
+                $parentAssociationMappings[] = $metadata->associationMappings[$nameElement];
+                $class = $metadata->getAssociationTargetClass($nameElement);
+                $embeddedClass = null;
+            }
         }
 
-        return array($this->getMetadata($class), $lastPropertyName, $parentAssociationMappings);
+        return array(
+            $embeddedClass ? $this->getMetadataForEmbeddable($class, $embeddedClass) : $this->getMetadata($class),
+            $lastPropertyName,
+            $parentAssociationMappings,
+        );
     }
 
     /**
